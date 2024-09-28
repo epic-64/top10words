@@ -60,3 +60,15 @@ object WebWordCounter:
             url -> top10WithPositions
         }.toMap
     }
+
+    // Function to get occurrence count of each word in the top 10 lists
+    def top10Occurrences(results: List[(String, Map[String, Int])]): Map[String, Int] = {
+        val occurrenceMap = mutable.Map[String, Int]()
+        results.foreach { case (_, counts) =>
+            counts.toList.sortBy(-_._2).take(10).foreach {
+                case (word, _) =>
+                    occurrenceMap(word) = occurrenceMap.getOrElse(word, 0) + 1
+            }
+        }
+        occurrenceMap.toMap
+    }
