@@ -1,6 +1,3 @@
-import scala.concurrent.{Future, Await}
-import scala.concurrent.duration._
-
 @main def main(): Unit = {
   // List of websites to crawl
   val urls = List(
@@ -16,24 +13,8 @@ import scala.concurrent.duration._
     "https://news.ycombinator.com"
   )
 
-  // Call WebWordCounter to get the top words for each website
-  val wordCountFuture = WebWordCounter.countWords(urls)
-
-  // Await the results and handle potential exceptions
-  val results = try
-    Await.result(wordCountFuture, 30.seconds) // Wait for up to 30 seconds
-  catch
-    case e: Exception =>
-      println(s"An error occurred while waiting for the result: ${e.getMessage}")
-      return
-
-  // Build the printable structure
-  val printableResult = results.map { case (url, wordCounts) =>
-    val formattedCounts = wordCounts.map { case (word, count) =>
-      f"$word%-15s : $count"
-    }.mkString("\n")
-    s"\n$url:\n$formattedCounts"
-  }.mkString("\n")
+  // Call WebWordCounter to process and print the results
+  val printableResult = WebWordCounter.processResults(urls)
 
   // Print the final result
   println("Top 10 most used words for each website:")
