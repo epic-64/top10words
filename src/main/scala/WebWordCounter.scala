@@ -6,16 +6,25 @@ import scala.concurrent.duration._
 import scala.collection.mutable
 
 object WebWordCounter:
-
   // Function to fetch the content of a website
   def fetchContent(url: String): Future[String] = Future {
     Source.fromURL(url).mkString
   }
 
+  // Function to remove HTML tags using a regular expression
+  def removeHtmlTags(content: String): String = {
+    content.replaceAll("<[^>]*>", " ")
+  }
+
   // Function to compute the top 10 most used words
   def top10Words(content: String): Future[List[(String, Int)]] = Future {
     val wordCounts = mutable.Map[String, Int]()
-    val words = content.toLowerCase.split("\\W+").filter(_.nonEmpty)
+
+    // Remove HTML tags and split into words
+    val cleanedContent = removeHtmlTags(content)
+    val words = cleanedContent.toLowerCase
+        .split("\\W+")
+        .filter(word => word.nonEmpty && word.length > 2) // Remove short words and empty strings
 
     words.foreach { word =>
       wordCounts(word) = wordCounts.getOrElse(word, 0) + 1
