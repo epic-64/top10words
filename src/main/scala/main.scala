@@ -1,8 +1,9 @@
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import java.nio.file.{Files, Paths}
+import java.nio.charset.StandardCharsets
 
 @main def main(): Unit = {
-  // List of websites to crawl
   val urls = List(
     "https://example.com",
     "https://www.scala-lang.org",
@@ -39,4 +40,9 @@ import scala.concurrent.duration._
   val printableCombined = formatter.formatCombined(top10Results, top10Positions, top10Occurrences)
   println("Top 10 most used words for each website with their positions on other websites:")
   println(printableCombined)
+
+  // Format and save results as HTML
+  val htmlCombined = formatter.formatCombinedHtml(top10Results, top10Positions, top10Occurrences)
+  Files.write(Paths.get("word_analysis.html"), htmlCombined.getBytes(StandardCharsets.UTF_8))
+  println("\nResults have been saved as 'word_analysis.html'.")
 }
