@@ -16,7 +16,7 @@ import scala.concurrent.duration._
     "https://news.ycombinator.com"
   )
 
-  // Call WebWordCounter to get the top words for each website
+  // Call WebWordCounter to get the word counts for each website
   val wordCountFuture = WebWordCounter.countWords(urls)
 
   // Await the results and handle potential exceptions
@@ -27,11 +27,18 @@ import scala.concurrent.duration._
       println(s"An error occurred while processing the results: ${e.getMessage}")
       return
 
-  // Create an instance of ResultFormatter and format the results
+  // Create an instance of ResultFormatter
   val formatter = ResultFormatter()
-  val printableResult = formatter.format(results)
 
-  // Print the final result
+  // Format and print top 10 words for each website
+  val top10Results = WebWordCounter.top10Words(results)
+  val printableTop10 = formatter.formatTop10(top10Results)
   println("Top 10 most used words for each website:")
-  println(printableResult)
+  println(printableTop10)
+
+  // Format and print words that are in the top 10 of multiple websites
+  val multiTop10Results = WebWordCounter.multiTop10Words(results)
+  val printableMultiTop10 = formatter.formatMultiTop10(multiTop10Results)
+  println("\nWords that are in the top 10 on multiple websites:")
+  println(printableMultiTop10)
 }

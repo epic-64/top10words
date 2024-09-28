@@ -15,8 +15,8 @@ object WebWordCounter:
         content.replaceAll("<[^>]*>", " ")
     }
 
-    // Function to compute the top 10 most used words
-    def top10Words(content: String): Future[List[(String, Int)]] = Future {
+    // Function to compute all word counts
+    def wordCounts(content: String): Future[Map[String, Int]] = Future {
         val wordCounts = mutable.Map[String, Int]()
 
         // Remove HTML tags and split into words
@@ -29,16 +29,48 @@ object WebWordCounter:
             wordCounts(word) = wordCounts.getOrElse(word, 0) + 1
         }
 
-        wordCounts.toList.sortBy(-_._2).take(10)
+        wordCounts.toMap
     }
 
-    // Function to process a list of websites and return the top 10 words for each
-    def countWords(urls: List[String]): Future[List[(String, List[(String, Int)])]] = {
+    // Function to process a list of websites and return the word counts for each
+    def countWords(urls: List[String]): Future[List[(String, Map[String, Int])]] = {
         // Download and process each website asynchronously
         val futures = urls.map { url =>
-            fetchContent(url).flatMap(content => top10Words(content).map(url -> _))
+            fetchContent(url).flatMap(content => wordCounts(content).map(url -> _))
         }
 
         // Combine all results
         Future.sequence(futures)
+    }
+
+    // Function to get top 10 words for each website from the full word counts
+    def top10Words(results: List[(String, Map[String, Int])]): List[(String, List[(String, Int)])] = {
+        results.map { case (url, counts) =>
+            val top10 = counts.toList.sortBy(-_._2).take(10)
+            url -> top10
+        }
+    }
+
+    // Function to get words that are in the top 10 of multiple websites
+    def multiTop10Words(results: List[(String, Map[String, Int])]): List[(String, Set[String])] = {
+        // Get top 10 words for each website
+        val top10WordsPerSite = top10Words(results)
+
+        // Find words that appear in the top 10 of multiple websites
+        val wordOccurrence = mutable.Map[String, Int]()
+
+        top10WordsPerSite.foreach { case (_, top10) =>
+            top10.foreach { case (word, _) =>
+                wordOccurrence(word) = wordOccurrence.getOrElse(word, 0) + 1
+            }
+        }
+
+        // Filter words that appear in the top 10 of multiple websites
+        val commonWords = wordOccurrence.filter(_._2 > 1).keys.toSet
+
+        // Return a list of words that are in the top 10 on multiple websites per site
+        results.map { case (url, counts) =>
+            val top10 = counts.toList.sortBy(-_._2).take(10).map(_._1).toSet
+            url -> (top10 & commonWords)
+        }
     }
