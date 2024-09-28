@@ -51,26 +51,12 @@ object WebWordCounter:
         }
     }
 
-    // Function to get words that are in the top 10 of multiple websites
-    def multiTop10Words(results: List[(String, Map[String, Int])]): List[(String, Set[String])] = {
-        // Get top 10 words for each website
-        val top10WordsPerSite = top10Words(results)
-
-        // Find words that appear in the top 10 of multiple websites
-        val wordOccurrence = mutable.Map[String, Int]()
-
-        top10WordsPerSite.foreach { case (_, top10) =>
-            top10.foreach { case (word, _) =>
-                wordOccurrence(word) = wordOccurrence.getOrElse(word, 0) + 1
-            }
-        }
-
-        // Filter words that appear in the top 10 of multiple websites
-        val commonWords = wordOccurrence.filter(_._2 > 1).keys.toSet
-
-        // Return a list of words that are in the top 10 on multiple websites per site
+    // Function to get the position of each word in the top 10 for all websites
+    def top10Positions(results: List[(String, Map[String, Int])]): Map[String, Map[String, Int]] = {
         results.map { case (url, counts) =>
-            val top10 = counts.toList.sortBy(-_._2).take(10).map(_._1).toSet
-            url -> (top10 & commonWords)
-        }
+            val top10WithPositions = counts.toList.sortBy(-_._2).take(10).zipWithIndex.map {
+                case ((word, _), index) => word -> (index + 1)
+            }.toMap
+            url -> top10WithPositions
+        }.toMap
     }

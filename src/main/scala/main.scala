@@ -30,15 +30,12 @@ import scala.concurrent.duration._
   // Create an instance of ResultFormatter
   val formatter = ResultFormatter()
 
-  // Format and print top 10 words for each website
+  // Get top 10 words and their positions across websites
   val top10Results = WebWordCounter.top10Words(results)
-  val printableTop10 = formatter.formatTop10(top10Results)
-  println("Top 10 most used words for each website:")
-  println(printableTop10)
+  val top10Positions = WebWordCounter.top10Positions(results)
 
-  // Format and print words that are in the top 10 of multiple websites
-  val multiTop10Results = WebWordCounter.multiTop10Words(results)
-  val printableMultiTop10 = formatter.formatMultiTop10(multiTop10Results)
-  println("\nWords that are in the top 10 on multiple websites:")
-  println(printableMultiTop10)
+  // Format and print combined results
+  val printableCombined = formatter.formatCombined(top10Results, top10Positions)
+  println("Top 10 most used words for each website with their positions on other websites:")
+  println(printableCombined)
 }
