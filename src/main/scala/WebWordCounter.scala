@@ -1,8 +1,7 @@
-import scala.concurrent.{Future, ExecutionContext, Await}
+import scala.concurrent.{Future, ExecutionContext}
 import scala.io.Source
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 object WebWordCounter:
 
@@ -42,27 +41,4 @@ object WebWordCounter:
 
         // Combine all results
         Future.sequence(futures)
-    }
-
-    // Function to format results into a printable string
-    def formatResults(results: List[(String, List[(String, Int)])]): String = {
-        results.map { case (url, wordCounts) =>
-            val formattedCounts = wordCounts.map { case (word, count) =>
-                f"$word%-15s : $count"
-            }.mkString("\n")
-            s"\n$url:\n$formattedCounts"
-        }.mkString("\n")
-    }
-
-    // Function to process and handle results, and return a printable string or an error message
-    def processResults(urls: List[String]): String = {
-        val wordCountFuture = countWords(urls)
-
-        // Await the results and handle potential exceptions
-        try
-            val results = Await.result(wordCountFuture, 30.seconds) // Wait for up to 30 seconds
-            formatResults(results)
-        catch
-            case e: Exception =>
-                s"An error occurred while processing the results: ${e.getMessage}"
     }
