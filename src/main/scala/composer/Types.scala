@@ -11,6 +11,9 @@ case class ComposerFile(
     @key("require") packages: Map[String, String],
     @key("require-dev") dev: Option[Map[String, String]] = None
 )derives ReadWriter {
+    def combinedList: List[Package] =
+        packagesAsList ++ devAsList
+
     def packagesAsList: List[Package] =
         packages
             .map { case (pkg, version) => Package(pkg, version) }
