@@ -31,6 +31,12 @@ object CompiledPackageList:
         CompiledPackageList(compiledList.toList)
     }
 
+    def printInfo(numberOfFiles: Int, packageCount: Int, versionCount: Int): Unit = {
+        println(s"total number of files: $numberOfFiles")
+        println(s"total number of packages (by name): $packageCount")
+        println(s"total number of unique package versions: $versionCount")
+    }
+
 case class ComposerFile(
     @key("require") packages: Map[String, String],
     @key("require-dev") dev: Option[Map[String, String]] = None

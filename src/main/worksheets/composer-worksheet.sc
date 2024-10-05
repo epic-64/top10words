@@ -10,15 +10,9 @@ val files = repo.all()
 
 val compiledList = CompiledPackageList.fromFiles(files)
 
-def printInfo(numberOfFiles: Int, packageCount: Int, versionCount: Int): Unit = {
-    println(s"total number of files: $numberOfFiles")
-    println(s"total number of packages (by name): $packageCount")
-    println(s"total number of unique package versions: $versionCount")
-}
-
-printInfo(files.size, compiledList.items.size, compiledList.items.flatMap(_.versions.keys).size)
-
 val sortedList = CompiledPackageList.sort(compiledList.items)
+
+CompiledPackageList.printInfo(files.size, compiledList.items.size, compiledList.items.flatMap(_.versions.keys).size)
 
 sortedList.foreach((item: PackageSummary) => {
     println(s"${item.packageName} - ${item.usageCount}")
