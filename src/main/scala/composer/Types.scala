@@ -12,7 +12,7 @@ sealed trait PackageListState
 class Compiled extends PackageListState
 class Sorted extends PackageListState
 
-case class PackageList[s <: PackageListState](items: List[PackageSummary]) {
+case class PackageList[S <: PackageListState](items: List[PackageSummary]) {
     def print(): Unit = {
         items.foreach((item: PackageSummary) => {
             println(s"${item.packageName} - ${item.usageCount}")
@@ -30,22 +30,21 @@ object CompiledPackageList:
     def sort(list: PackageList[Compiled]): PackageList[Sorted] =
         PackageList[Sorted](list.items.sortBy(_.packageName).reverse.sortBy(_.usageCount).reverse)
 
-    private def getSummaries(packageName: String, packageList: List[Package]): PackageSummary = {
-        val versions = packageList
-            .groupBy(_.packageVersion)
-            .map { (version, packages) =>
-                (version, packages.map(_.toString))
-            }
-
-        PackageSummary(packageName, packageList.size, versions)
-    }
-
     def fromFiles(files: List[ComposerFile]): PackageList[Compiled] = {
-        val summaries = files
+        val groups = files
             .flatMap(file => file.combinedList.map(pkg => (file.name, pkg)))
             .groupBy((_, pkg) => pkg.packageName)
-            .map((packageName, packageList) => getSummaries(packageName, packageList.map(_._2)))
-            .toList
+
+        groups.foreach(println)
+
+        val summaries = groups.map((packageName, group) => {
+            val versions = group.groupBy((_, pkg) => pkg.packageVersion)
+            val versionList = versions.map((version, versionGroup) => {
+                val projects = versionGroup.map((_, project) => project._1)
+                (version, projects)
+            })
+            PackageSummary(packageName, group.size, versionList)
+        }).toList
 
         PackageList[Compiled](summaries)
     }
@@ -69,14 +68,15 @@ object CompiledPackageList:
     }
 
 case class ComposerFile(
-    name: String,
-    @key("require") packages: Map[String, String],
-    @key("require-dev") dev: Option[Map[String, String]] = None
-) derives ReadWriter {
-    def combinedList: List[Package] = packagesAsList ++ devAsList
-    private def packagesAsList: List[Package] = packages.map((pkg, version) => Package(pkg, version)).toList
-    private def devAsList: List[Package] = dev.getOrElse(Map.empty).map((pkg, version) => Package(pkg, version)).toList
-}
+                        name:     String,
+    @key("require")     packages: Map[String, String],
+    @key("require-dev") dev:      Option[Map[String, String]] = None
+) derives ReadWriter
 
 object ComposerFile:
     def fromJson(jsonContent: String): ComposerFile = read[ComposerFile](jsonContent)
+
+extension (item: ComposerFile)
+    def combinedList: List[Package] = item.getPackageList ++ item.getDevList
+    private def getPackageList: List[Package] = item.packages.map((pkg, version) => Package(pkg, version)).toList
+    private def getDevList: List[Package] = item.dev.getOrElse(Map.empty).map((pkg, version) => Package(pkg, version)).toList
