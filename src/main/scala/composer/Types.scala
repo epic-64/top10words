@@ -11,10 +11,11 @@ case class PackageSummary(packageName: String, usageCount: Int, versions: Map[St
 case class CompiledPackageList(items: List[PackageSummary])
 
 object CompiledPackageList:
-    def sort(items: List[PackageSummary]): List[PackageSummary] =
-        items
+    def sort(list: CompiledPackageList): CompiledPackageList =
+        CompiledPackageList(list.items
             .sortBy(_.packageName).reverse
             .sortBy(_.usageCount).reverse
+        )
 
     def fromFiles(files: List[ComposerFile]): CompiledPackageList = {
         val compiledList = files
@@ -41,11 +42,11 @@ object CompiledPackageList:
         println(s"total number of unique package versions: $versionCount")
     }
 
-    def print(items: List[PackageSummary]): Unit = {
-        items.foreach((item: PackageSummary) => {
+    def print(list: CompiledPackageList): Unit = {
+        list.items.foreach((item: PackageSummary) => {
             println(s"${item.packageName} - ${item.usageCount}")
             item.versions.foreach((version, projectList) => {
-                println(s"  $version")
+                println(s"  $version - ${projectList.size}")
                 projectList.foreach((project) => {
                     println(s"    $project")
                 })

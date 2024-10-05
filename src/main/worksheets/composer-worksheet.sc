@@ -9,7 +9,7 @@ val repo = new ComposerRepository()
 val files = repo.all()
 
 val compiledList = CompiledPackageList.fromFiles(files)
-val sortedList = CompiledPackageList.sort(compiledList.items)
+val sortedList = CompiledPackageList.sort(compiledList)
 
 CompiledPackageList.printInfo(files.size, compiledList.items.size, compiledList.items.flatMap(_.versions.keys).size)
 CompiledPackageList.print(sortedList)
