@@ -38,6 +38,7 @@ object CompiledPackageList:
     }
 
 case class ComposerFile(
+    name: String,
     @key("require") packages: Map[String, String],
     @key("require-dev") dev: Option[Map[String, String]] = None
 )derives ReadWriter {
