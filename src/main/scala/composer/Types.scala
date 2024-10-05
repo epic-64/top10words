@@ -12,9 +12,11 @@ sealed trait PackageListState
 class Compiled extends PackageListState
 class Sorted extends PackageListState
 
-case class PackageList[S <: PackageListState](items: List[PackageSummary]) {
+case class PackageList[S <: PackageListState](items: List[PackageSummary])
+
+extension (list: PackageList[?])
     def print(): Unit = {
-        items.foreach((item: PackageSummary) => {
+        list.items.foreach((item: PackageSummary) => {
             println(s"${item.packageName} - ${item.usageCount}")
             item.versions.foreach((version, projectList) => {
                 println(s"  $version - ${projectList.size}")
@@ -24,7 +26,6 @@ case class PackageList[S <: PackageListState](items: List[PackageSummary]) {
             })
         })
     }
-}
 
 object CompiledPackageList:
     def sort(list: PackageList[Compiled]): PackageList[Sorted] =
