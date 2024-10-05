@@ -3,25 +3,32 @@ package composer
 import upickle.default.*
 import upickle.implicits.key
 
-case class Package(packageName: String, packageVersion: String)derives ReadWriter {
+case class Package(packageName: String, packageVersion: String) derives ReadWriter:
     override def toString: String = s"$packageName:$packageVersion"
-}
 
 case class PackageSummary(packageName: String, usageCount: Int, versions: Map[String, List[String]])
 
 sealed trait PackageListState
-class Unsorted extends PackageListState
 class Compiled extends PackageListState
 class Sorted extends PackageListState
 
-case class PackageList[s <: PackageListState](items: List[PackageSummary])
+case class PackageList[s <: PackageListState](items: List[PackageSummary]) {
+    def print(): Unit = {
+        items.foreach((item: PackageSummary) => {
+            println(s"${item.packageName} - ${item.usageCount}")
+            item.versions.foreach((version, projectList) => {
+                println(s"  $version - ${projectList.size}")
+                projectList.foreach((project) => {
+                    println(s"    $project")
+                })
+            })
+        })
+    }
+}
 
 object CompiledPackageList:
     def sort(list: PackageList[Compiled]): PackageList[Sorted] =
-        PackageList[Sorted](list.items
-            .sortBy(_.packageName).reverse
-            .sortBy(_.usageCount).reverse
-        )
+        PackageList[Sorted](list.items.sortBy(_.packageName).reverse.sortBy(_.usageCount).reverse)
 
     private def getSummaries(packageName: String, packageList: List[Package]): PackageSummary = {
         val versions = packageList
@@ -65,22 +72,11 @@ case class ComposerFile(
     name: String,
     @key("require") packages: Map[String, String],
     @key("require-dev") dev: Option[Map[String, String]] = None
-)derives ReadWriter {
-    def combinedList: List[Package] =
-        packagesAsList ++ devAsList
-
-    def packagesAsList: List[Package] =
-        packages
-            .map { case (pkg, version) => Package(pkg, version) }
-            .toList
-
-    def devAsList: List[Package] =
-        dev
-            .getOrElse(Map.empty)
-            .map { case (pkg, version) => Package(pkg, version) }
-            .toList
+) derives ReadWriter {
+    def combinedList: List[Package] = packagesAsList ++ devAsList
+    private def packagesAsList: List[Package] = packages.map((pkg, version) => Package(pkg, version)).toList
+    private def devAsList: List[Package] = dev.getOrElse(Map.empty).map((pkg, version) => Package(pkg, version)).toList
 }
 
 object ComposerFile:
-    def fromJson(jsonContent: String): ComposerFile =
-        read[ComposerFile](jsonContent)
+    def fromJson(jsonContent: String): ComposerFile = read[ComposerFile](jsonContent)
