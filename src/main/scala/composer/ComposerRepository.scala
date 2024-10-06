@@ -1,7 +1,7 @@
 package composer
 
 class ComposerRepository:
-    private val file1 = """
+  private val file1 = """
         |{
         |    "name": "test1",
         |    "require": {
@@ -23,7 +23,7 @@ class ComposerRepository:
         |    }
         |}""".stripMargin.replaceAll("\n", "")
 
-    private val file2 = """
+  private val file2 = """
         |{
         |    "name": "test2",
         |    "require": {
@@ -35,11 +35,13 @@ class ComposerRepository:
         |    }
         |}""".stripMargin.replaceAll("\n", "")
 
-    private val file3 ="""
+  private val file3 = """
         |{
         |    "name": "openai-php/client",
-        |    "description": "OpenAI PHP is a supercharged PHP API client that allows you to interact with the Open AI API",
-        |    "keywords": ["php", "openai", "sdk", "codex", "GPT-3", "DALL-E", "api", "client", "natural", "language", "processing"],
+        |    "description": "OpenAI PHP is a supercharged PHP API client that allows you to interact with the Open AI
+        |     API",
+        |    "keywords": ["php", "openai", "sdk", "codex", "GPT-3", "DALL-E", "api", "client", "natural", "language",
+        |     "processing"],
         |    "license": "MIT",
         |    "authors": [
         |        {
@@ -113,9 +115,9 @@ class ComposerRepository:
         |    }
         |}""".stripMargin.replaceAll("\n", "")
 
-    def all(): List[ComposerFile] =
-        List(
-            ComposerFile.fromJson(file1),
-            ComposerFile.fromJson(file2),
-            ComposerFile.fromJson(file3),
-        )
+  def all(): List[ComposerFile] =
+    List(
+      ComposerFile.fromJson(file1),
+      ComposerFile.fromJson(file2),
+      ComposerFile.fromJson(file3)
+    )
