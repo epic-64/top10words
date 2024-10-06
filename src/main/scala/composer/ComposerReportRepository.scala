@@ -8,8 +8,6 @@ import upickle.implicits.key
 // Types for decoding composer.json files
 case class Package(packageName: String, packageVersion: String) derives ReadWriter
 
-extension (item: Package) def toString: String = s"${item.packageName}:${item.packageVersion}"
-
 case class ComposerFile(
     name: String,
     @key("require") packages: Map[String, String],
@@ -22,16 +20,17 @@ object ComposerFile:
 extension (item: ComposerFile)
   def combinedList: List[Package]           = item.getPackageList ++ item.getDevList
   private def getPackageList: List[Package] = item.packages.map((pkg, version) => Package(pkg, version)).toList
-  private def getDevList: List[Package]     = item.dev
-    .getOrElse(Map.empty)
-    .map((pkg, version) => Package(pkg, version))
-    .toList
+  private def getDevList: List[Package]     =
+    item.dev
+      .getOrElse(Map.empty)
+      .map((pkg, version) => Package(pkg, version))
+      .toList
 
 // Types for building reports
-opaque type ProjectName    = String
-opaque type PackageName    = String
-opaque type PackageVersion = String
-opaque type PackageList    = List[Package]
+type ProjectName    = String
+type PackageName    = String
+type PackageVersion = String
+type PackageList    = List[Package]
 
 case class UsedVersion(projectName: ProjectName, packageName: PackageName, packageVersion: PackageVersion)
 case class PackageReport(packageName: PackageName, occurrences: List[UsedVersion])
@@ -42,32 +41,32 @@ object ComposerReportRepository:
     val allPackages = files.flatMap { file =>
       file.combinedList.map(pkg =>
         UsedVersion(
-          file.name.asInstanceOf[ProjectName],
-          pkg.packageName.asInstanceOf[PackageName],
-          pkg.packageVersion.asInstanceOf[PackageVersion]
+          file.name,
+          pkg.packageName,
+          pkg.packageVersion
         )
       )
     }
 
     // Group packages by name
-    val groupedByPackageName: Map[PackageName, List[UsedVersion]] =
-      allPackages.groupBy(_.packageName)
+    allPackages
+      .groupBy(_.packageName)
+      .map { case (packageName, versions) =>
+        // Group by specific version
+        val groupedByVersion: Map[PackageVersion, List[UsedVersion]] =
+          versions.groupBy(_.packageVersion)
 
-    groupedByPackageName.map { case (packageName, versions) =>
-      // Group by specific version
-      val groupedByVersion: Map[PackageVersion, List[UsedVersion]] =
-        versions.groupBy(_.packageVersion)
-
-      // Build the PackageReport with all occurrences for each version
-      PackageReport(
-        packageName,
-        groupedByVersion.flatMap { case (version, usedVersions) =>
-          usedVersions.map { uv =>
-            uv.copy(packageVersion = version)
-          }
-        }.toList
-      )
-    }.toList
+        // Build the PackageReport with all occurrences for each version
+        PackageReport(
+          packageName,
+          groupedByVersion.flatMap { case (version, usedVersions) =>
+            usedVersions.map { uv =>
+              uv.copy(packageVersion = version)
+            }
+          }.toList
+        )
+      }
+      .toList
 
   def createReportString(reports: List[PackageReport]): String =
     val sb = new StringBuilder
