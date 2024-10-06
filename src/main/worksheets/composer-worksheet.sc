@@ -1,5 +1,4 @@
-import composer.ComposerRepository
-import composer.types.*
+import composer.{ComposerReportRepository, ComposerRepository}
 import upickle.default.*
 import upickle.implicits.key
 
@@ -7,10 +6,9 @@ import scala.collection.immutable.HashMap
 
 val repo = new ComposerRepository()
 
-val files: List[ComposerFile] = repo.all()
+val files = repo.all()
 
-val compiledList = CompiledPackageList.fromFiles(files)
-val sortedList = CompiledPackageList.sort(compiledList)
+val report = ComposerReportRepository.getReport(files)
+val reportString = ComposerReportRepository.createReportString(report)
 
-CompiledPackageList.printInfo(files.size, compiledList.items.size, compiledList.items.flatMap(_.versions.keys).size)
-sortedList.print()
+println(reportString)

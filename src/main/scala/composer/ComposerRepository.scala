@@ -1,7 +1,5 @@
 package composer
 
-import composer.types.ComposerFile
-
 class ComposerRepository:
     private val file1 = """
         |{

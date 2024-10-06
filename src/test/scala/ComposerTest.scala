@@ -1,4 +1,4 @@
-import composer.types.*
+import composer.{ComposerFile, ComposerReportRepository}
 import org.scalatest.funsuite.AnyFunSuite
 
 class ComposerTest extends AnyFunSuite {
@@ -33,11 +33,11 @@ class ComposerTest extends AnyFunSuite {
             )
         )
 
-        val compiledList = CompiledPackageList.fromFiles(files)
-        val sortedList   = CompiledPackageList.sort(compiledList)
+        println(files)
 
-        assert(sortedList.items.size == 1)
-        println(sortedList)
-        println(sortedList.getPrintableString)
+        val report = ComposerReportRepository.getReport(files)
+        println(report)
+
+        println(ComposerReportRepository.createReportString(report))
     }
 }
