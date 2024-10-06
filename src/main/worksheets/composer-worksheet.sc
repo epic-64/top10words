@@ -9,6 +9,9 @@ val repo = new ComposerRepository()
 val files = repo.all()
 
 val report = ComposerReportRepository.getReport(files)
-val reportString = ComposerReportRepository.createReportString(report)
+val sorted = report
+  .sortBy(_.packageName).reverse
+  .sortBy(_.occurrences.size).reverse
+val reportString = ComposerReportRepository.createReportString(sorted)
 
 println(reportString)
