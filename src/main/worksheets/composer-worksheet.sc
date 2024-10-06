@@ -1,4 +1,5 @@
-import composer.*
+import composer.ComposerRepository
+import composer.types.*
 import upickle.default.*
 import upickle.implicits.key
 
