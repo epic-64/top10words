@@ -41,7 +41,7 @@ case class Player(name: String, skills: Map[String, Skill]) {
 }
 
 object GameApp extends JFXApp3 {
-  var player = Player("Hero", Map("Gathering" -> Skill("Gathering")))
+  private var player = Player("Hero", Map("Gathering" -> Skill("Gathering")))
 
   val gatherXpPerAction = 10.0
 
@@ -54,6 +54,7 @@ object GameApp extends JFXApp3 {
     xpLabel = new Label("Gathering (Level 1): 0/100 XP")
     progressBar = new ProgressBar {
       progress = 0.0
+      prefWidth = 300
     }
 
     stage = new JFXApp3.PrimaryStage {
