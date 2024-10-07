@@ -41,20 +41,28 @@ case class Player(name: String, skills: Map[String, Skill]) {
 }
 
 object GameApp extends JFXApp3 {
-  private var player = Player("Hero", Map("Gathering" -> Skill("Gathering")))
+  var player = Player("Hero", Map("Gathering" -> Skill("Gathering")))
 
   val gatherXpPerAction = 10.0
 
-  // Labels and ProgressBar for the UI, initialized inside start() to avoid toolkit error
+  // Labels and ProgressBars for the UI
   var xpLabel: Label = _
   var progressBar: ProgressBar = _
+  var actionProgressBar: ProgressBar = _
+
+  // Time it takes to complete one action in milliseconds (e.g., 2 seconds)
+  val actionDuration: Long = 2000
 
   override def start(): Unit = {
-    // Now we initialize UI components inside the start method
+    // Initialize UI components inside the start method
     xpLabel = new Label("Gathering (Level 1): 0/100 XP")
     progressBar = new ProgressBar {
       progress = 0.0
-      prefWidth = 300
+      prefWidth = 300 // Increase the width of the progress bar
+    }
+    actionProgressBar = new ProgressBar {
+      progress = 0.0
+      prefWidth = 300 // Increase the width of the action progress bar
     }
 
     stage = new JFXApp3.PrimaryStage {
@@ -66,6 +74,7 @@ object GameApp extends JFXApp3 {
           children = Seq(
             xpLabel,
             progressBar,
+            actionProgressBar, // Add the action progress bar
             new Button("Gather Resource") {
               onAction = _ => {
                 player = gatherResource(player, "Wood", "Gathering")
@@ -82,11 +91,15 @@ object GameApp extends JFXApp3 {
     scheduler.scheduleAtFixedRate(new Runnable {
       override def run(): Unit = {
         Platform.runLater {
-          player = gatherResource(player, "Wood", "Gathering")
-          updateUI()
+          updateActionProgress() // Update action progress bar
+          if (actionProgressBar.progress() >= 1.0) {
+            player = gatherResource(player, "Wood", "Gathering")
+            updateUI()
+            resetActionProgress()
+          }
         }
       }
-    }, 0, 1, TimeUnit.SECONDS)
+    }, 0, 16, TimeUnit.MILLISECONDS) // Run the task every ~16ms for 60 FPS smooth action progress
   }
 
   // Function to gather resources and update player state
@@ -94,11 +107,23 @@ object GameApp extends JFXApp3 {
     player.gainExperience(skillName, gatherXpPerAction)
   }
 
-  // Update the UI components
+  // Update the XP UI components
   def updateUI(): Unit = {
     player.getSkill("Gathering").foreach { skill =>
       xpLabel.text = s"Gathering (Level ${skill.level}): ${skill.experience.toInt}/${skill.xpToNextLevel.toInt} XP"
       progressBar.progress = skill.experienceProgress
     }
+  }
+
+  // Reset the action progress bar
+  def resetActionProgress(): Unit = {
+    actionProgressBar.progress = 0.0
+  }
+
+  // Update the action progress bar (fills over the duration of the action)
+  def updateActionProgress(): Unit = {
+    val currentProgress = actionProgressBar.progress()
+    val progressStep = 1.0 / (actionDuration / 16.0) // Correct progress step calculation for smoother 60 FPS updates
+    actionProgressBar.progress = Math.min(currentProgress + progressStep, 1.0)
   }
 }
