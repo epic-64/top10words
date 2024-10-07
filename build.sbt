@@ -7,5 +7,6 @@ libraryDependencies ++= Seq(
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
     "com.lihaoyi" %% "upickle" % "4.0.2",
     "org.scalatest" %% "scalatest" % "3.2.18" % "test",
-    "org.scalafx" %% "scalafx" % "22.0.0-R33"
+    "org.scalafx" %% "scalafx" % "22.0.0-R33",
+    "com.googlecode.lanterna" % "lanterna" % "3.1.2"
 )

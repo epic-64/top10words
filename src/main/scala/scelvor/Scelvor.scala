@@ -9,7 +9,6 @@ import scalafx.geometry.Insets
 import scalafx.scene.layout.VBox
 
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-import scala.compiletime.uninitialized
 
 // Immutable data structure for a Skill
 case class Skill(name: String, level: Int = 1, experience: Double = 0.0) {
@@ -34,36 +33,35 @@ case class Player(name: String, skills: Map[String, Skill]) {
       case Some(skill) =>
         val updatedSkill = skill.gainExperience(xp)
         copy(skills = skills.updated(skillName, updatedSkill)) // Return updated player
-      case None        => this // If skill not found, return unchanged player
+      case None => this // If skill not found, return unchanged player
     }
 
   def getSkill(skillName: String): Option[Skill] = skills.get(skillName)
 }
 
 object GameApp extends JFXApp3 {
-  var player = Player("Hero", Map("Gathering" -> Skill("Gathering")))
+  var player: Player = Player("Hero", Map("Gathering" -> Skill("Gathering")))
 
   val gatherXpPerAction = 10.0
+  val frameDurationMs = 16
+  val actionDuration: Long = 2000
 
   // Labels and ProgressBars for the UI
-  var xpLabel: Label                 = uninitialized
-  var progressBar: ProgressBar       = uninitialized
-  var actionProgressBar: ProgressBar = uninitialized
-
-  // Time it takes to complete one action in milliseconds (e.g., 2 seconds)
-  val actionDuration: Long = 10000
+  var xpLabel: Option[Label] = None
+  var progressBar: Option[ProgressBar] = None
+  var actionProgressBar: Option[ProgressBar] = None
 
   override def start(): Unit = {
     // Initialize UI components inside the start method
-    xpLabel = new Label("Gathering (Level 1): 0/100 XP")
-    progressBar = new ProgressBar {
+    xpLabel = Some(new Label("Gathering (Level 1): 0/100 XP"))
+    progressBar = Some(new ProgressBar {
       progress = 0.0
       prefWidth = 300 // Increase the width of the progress bar
-    }
-    actionProgressBar = new ProgressBar {
+    })
+    actionProgressBar = Some(new ProgressBar {
       progress = 0.0
       prefWidth = 300 // Increase the width of the action progress bar
-    }
+    })
 
     stage = new JFXApp3.PrimaryStage {
       title = "ScalaFX Melvor Idle Clone"
@@ -72,9 +70,9 @@ object GameApp extends JFXApp3 {
           padding = Insets(20)
           spacing = 10
           children = Seq(
-            xpLabel,
-            progressBar,
-            actionProgressBar, // Add the action progress bar
+            xpLabel.get,
+            progressBar.get,
+            actionProgressBar.get,
             new Button("Gather Resource") {
               onAction = _ => {
                 player = gatherResource(player, "Wood", "Gathering")
@@ -92,14 +90,14 @@ object GameApp extends JFXApp3 {
       () =>
         Platform.runLater {
           updateActionProgress() // Update action progress bar
-          if (actionProgressBar.progress() >= 1.0) {
+          if (actionProgressBar.exists(_.progress() >= 1.0)) {
             player = gatherResource(player, "Wood", "Gathering")
             updateUI()
             resetActionProgress()
           }
         },
       0,
-      16,
+      frameDurationMs,
       TimeUnit.MILLISECONDS
     ) // Run the task every ~16ms for 60 FPS smooth action progress
   }
@@ -111,18 +109,20 @@ object GameApp extends JFXApp3 {
   // Update the XP UI components
   def updateUI(): Unit =
     player.getSkill("Gathering").foreach { skill =>
-      xpLabel.text = s"Gathering (Level ${skill.level}): ${skill.experience.toInt}/${skill.xpToNextLevel.toInt} XP"
-      progressBar.progress = skill.experienceProgress
+      xpLabel.foreach(_.text = s"Gathering (Level ${skill.level}): ${skill.experience.toInt}/${skill.xpToNextLevel.toInt} XP")
+      progressBar.foreach(_.progress = skill.experienceProgress)
     }
 
   // Reset the action progress bar
   def resetActionProgress(): Unit =
-    actionProgressBar.progress = 0.0
+    actionProgressBar.foreach(_.progress = 0.0)
 
   // Update the action progress bar (fills over the duration of the action)
   def updateActionProgress(): Unit = {
-    val currentProgress = actionProgressBar.progress()
-    val progressStep    = 1.0 / (actionDuration / 16.0) // Correct progress step calculation for smoother 60 FPS updates
-    actionProgressBar.progress = Math.min(currentProgress + progressStep, 1.0)
+    actionProgressBar.foreach { bar =>
+      val currentProgress = bar.progress()
+      val progressStep = 1.0 / (actionDuration / frameDurationMs.toDouble)
+      bar.progress = Math.min(currentProgress + progressStep, 1.0)
+    }
   }
 }
