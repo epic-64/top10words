@@ -2,49 +2,61 @@ package scelvor
 
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
-// Simple data structure for a Skill
-case class Skill(name: String, var level: Int = 1, var experience: Double = 0.0)
-
-// Resource case class
-case class Resource(name: String)
-
-// Player with skills and methods for gaining experience
-case class Player(name: String, skills: Map[String, Skill]) {
-  // Gain XP in a skill
-  def gainExperience(skillName: String, xp: Double): Unit = {
-    val skill = skills(skillName)
-    skill.experience += xp
-    levelUp(skill)
+// Immutable data structure for a Skill
+case class Skill(name: String, level: Int = 1, experience: Double = 0.0) {
+  // Method to gain experience and potentially level up
+  def gainExperience(xp: Double): Skill = {
+    val updatedExperience = experience + xp
+    if (updatedExperience >= xpToNextLevel) {
+      copy(level = level + 1, experience = 0.0) // Reset experience after leveling up
+    } else {
+      copy(experience = updatedExperience)
+    }
   }
 
-  // Level up if experience exceeds the threshold
-  def levelUp(skill: Skill): Unit = {
-    val xpThreshold = 100 * skill.level
-    if (skill.experience >= xpThreshold) {
-      skill.level += 1
-      skill.experience = 0 // Reset experience after level up
-      println(s"${skill.name} leveled up to ${skill.level}!")
+  // Threshold for leveling up
+  def xpToNextLevel: Double = 100 * level
+}
+
+// Immutable Resource case class
+case class Resource(name: String)
+
+// Immutable Player with methods to gain experience in skills
+case class Player(name: String, skills: Map[String, Skill]) {
+  // Gain XP in a skill and return a new Player instance with updated skill
+  def gainExperience(skillName: String, xp: Double): Player = {
+    skills.get(skillName) match {
+      case Some(skill) =>
+        val updatedSkill = skill.gainExperience(xp)
+        copy(skills = skills.updated(skillName, updatedSkill)) // Return updated player
+      case None =>
+        this // If skill not found, return unchanged player
     }
   }
 }
 
-// Improved game loop with scheduled gathering
+// Game logic
 object Game {
   val gatherXpPerAction = 10.0
 
-  // Start gathering resources and leveling up the skill
-  def gatherResource(player: Player, resource: Resource, skillName: String): Unit = {
+  // Start gathering resources and return an updated player
+  def gatherResource(player: Player, resource: Resource, skillName: String): Player = {
     println(s"Gathering ${resource.name}...")
-    player.gainExperience(skillName, gatherXpPerAction)
+    val updatedPlayer = player.gainExperience(skillName, gatherXpPerAction)
+    updatedPlayer
   }
 
   // Game loop that runs every second using a scheduled executor
   def gameLoop(player: Player, resource: Resource, skillName: String): Unit = {
     val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(1)
 
+    var currentPlayer = player // Keep track of the current immutable player state
+
     // Task to run every second
     val gatherTask = new Runnable {
-      override def run(): Unit = gatherResource(player, resource, skillName)
+      override def run(): Unit = {
+        currentPlayer = gatherResource(currentPlayer, resource, skillName)
+      }
     }
 
     // Schedule the task to run at a fixed rate
@@ -54,7 +66,7 @@ object Game {
 
 // Main entry point
 @main def startGame(): Unit = {
-  // Create initial player with a gathering skill
+  // Create initial immutable player with a gathering skill
   val player   = Player("Hero", Map("Gathering" -> Skill("Gathering")))
   val resource = Resource("Wood")
 
