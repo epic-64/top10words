@@ -22,38 +22,67 @@ object Scelverna {
     screen.startScreen()
     screen.clear()
 
-    // Draw colorful world map
     val textGraphics = screen.newTextGraphics()
     val random = new Random()
 
     // Parameters to control landmass generation
     val landProbability = 0.05
     val connectionProbability = 0.8
+    val landColor = TextColor.ANSI.GREEN // Fixed color for landmasses
+    val oceanColor = TextColor.ANSI.BLUE // Fixed color for ocean
 
-    // Generate world map with landmasses and oceans
+    // Generate initial world map with landmasses and oceans
     var previousCharWasLand = false
+    val map = Array.ofDim[Char](24, 80)
     for (y <- 0 until 24) {
       previousCharWasLand = false
       for (x <- 0 until 80) {
         val isLand = if (previousCharWasLand) random.nextDouble() < connectionProbability else random.nextDouble() < landProbability
         if (isLand) {
-          val char = if (random.nextBoolean()) '(' else ')'
-          val color = TextColor.ANSI.values()(random.nextInt(TextColor.ANSI.values().length))
-          textGraphics.setForegroundColor(color)
-          textGraphics.putString(x, y, char.toString)
+          map(y)(x) = if (random.nextBoolean()) '(' else ')'
           previousCharWasLand = true
         } else {
-          textGraphics.putString(x, y, " ") // Draw empty space for ocean
+          map(y)(x) = ' ' // Empty space for ocean
           previousCharWasLand = false
         }
       }
     }
 
-    // Refresh the screen to show the text
-    screen.refresh()
+    // Function to draw the current map state
+    def drawMap(): Unit = {
+      for (y <- 0 until 24) {
+        for (x <- 0 until 80) {
+          val char = map(y)(x)
+          if (char == '(' || char == ')') {
+            textGraphics.setForegroundColor(landColor)
+          } else {
+            textGraphics.setForegroundColor(oceanColor)
+          }
+          textGraphics.putString(x, y, char.toString)
+        }
+      }
+      screen.refresh()
+    }
 
-    // Wait for user to press any key before closing
-    screen.readInput()
+    // Add motion to the landmasses by shifting them
+    def shiftMap(): Unit = {
+      for (y <- 0 until 24) {
+        val lastChar = map(y)(79)
+        for (x <- 79 until 1 by -1) {
+          map(y)(x) = map(y)(x - 1)
+        }
+        map(y)(0) = lastChar
+      }
+    }
+
+    // Continuously update the screen to show motion
+    var running = true
+    while (running) {
+      drawMap()
+      shiftMap()
+      Thread.sleep(50) // Control the speed of the motion for smoother framerate
+      if (screen.pollInput() != null) running = false // Stop if any key is pressed
+    }
 
     // Stop screen
     screen.stopScreen()
