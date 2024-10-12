@@ -5,6 +5,7 @@ object Todo {
     val ⏳ = "⏳"
     val ✅ = "✅"
     val ❌ = "❌"
+    val 🗿 = ""
 
     type 📚📅 = List[📅]
     type 🧵 = String
@@ -14,10 +15,10 @@ object Todo {
     def 📢📅(tasks: 📚📅): ⬛ =
       if tasks.isEmpty then 📢("No tasks")
       else tasks.foreach(t => 📢(t.short))
-      📢("")
+      📢(🗿)
 
     // Define a Task case class with status
-    case class 📅(description: 🧵, var status: 🧵 = "📅"):
+    case class 📅(description: 🧵, var status: 🧵 = ⏳):
       override def toString: 🧵 = s"Task(description: $description, status: $status)"
       def short: 🧵 = s"$status $description"
 
