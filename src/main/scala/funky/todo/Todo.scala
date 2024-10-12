@@ -1,4 +1,4 @@
-package todo
+package funky.todo
 
 object Todo {
   def main(args: Array[String]): Unit = {
