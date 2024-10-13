@@ -53,7 +53,7 @@ case class Stonecutting() extends Skill {
   var level: Int = 1
 }
 
-class Scelverna {
+class Scelverna:
   // Skills lists
   private var gatheringSkills: List[Skill] = List(Woodcutting(), Mining())
   private var manufacturingSkills: List[Skill] = List(Woodworking(), Stonecutting())
@@ -75,7 +75,7 @@ class Scelverna {
   screen.startScreen()
   screen.clear()
 
-  def run(): Unit = {
+  def run(): Unit =
     val graphics: TextGraphics = screen.newTextGraphics()
 
     // Create an ExecutionContext for the game loop
@@ -99,9 +99,9 @@ class Scelverna {
         handleInput(keyStroke)
       }
     }
-  }
+  end run
 
-  def update(): Unit = {
+  def update(): Unit =
     activeSkill match {
       case Some(skill: Woodcutting) =>
         if (actionProgress >= 1.0) {
@@ -118,9 +118,9 @@ class Scelverna {
         }
       case _ => // Do nothing for unimplemented skills
     }
-  }
+  end update
 
-  def render(graphics: TextGraphics): Unit = {
+  def render(graphics: TextGraphics): Unit =
     screen.clear()
 
     // Render left menu
@@ -138,9 +138,9 @@ class Scelverna {
         renderNotImplemented(graphics, skill)
       case _ => // Do nothing
     }
-  }
+  end render
 
-  def renderMenu(graphics: TextGraphics): Unit = {
+  def renderMenu(graphics: TextGraphics): Unit =
     graphics.putString(2, 1, "Gathering Skills:")
     gatheringSkills.zipWithIndex.foreach { case (skill, index) =>
       val color = if (activeSkill.contains(skill)) TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
@@ -158,9 +158,9 @@ class Scelverna {
     }
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
-  }
+  end renderMenu
 
-  def renderSkillUI(graphics: TextGraphics, skill: Skill): Unit = {
+  def renderSkillUI(graphics: TextGraphics, skill: Skill): Unit =
     graphics.putString(30, 1, s"${skill.name} Level: ${skill.level}")
     graphics.putString(30, 2, s"XP: ${skill.xp} / ${skill.xpForNextLevel}")
 
@@ -173,13 +173,12 @@ class Scelverna {
       graphics.putString(30, 7, "Action Progress:")
       renderProgressBar(graphics, 30, 8, actionProgress, TextColor.ANSI.GREEN)
     }
-  }
+  end renderSkillUI
 
-  def renderNotImplemented(graphics: TextGraphics, skill: Skill): Unit = {
+  def renderNotImplemented(graphics: TextGraphics, skill: Skill): Unit =
     graphics.putString(30, 1, s"${skill.name}: Not Implemented")
-  }
 
-  def renderProgressBar(graphics: TextGraphics, x: Int, y: Int, progress: Double, color: TextColor): Unit = {
+  def renderProgressBar(graphics: TextGraphics, x: Int, y: Int, progress: Double, color: TextColor): Unit =
     val progressBarLength = 40
     val filledLength = (progress * progressBarLength).toInt
 
@@ -197,9 +196,9 @@ class Scelverna {
     }
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset to default color
-  }
+  end renderProgressBar
 
-  def handleInput(keyStroke: KeyStroke): Unit = {
+  def handleInput(keyStroke: KeyStroke): Unit =
     keyStroke.getKeyType match {
       case KeyType.ArrowDown =>
         navigateMenu(1)
@@ -209,9 +208,9 @@ class Scelverna {
         activeSkill = selectedSkill // Activate the currently selected skill
       case _ => // Other keys can be handled here if necessary
     }
-  }
+  end handleInput
 
-  def navigateMenu(direction: Int): Unit = {
+  def navigateMenu(direction: Int): Unit =
     // All skills combined (for easier navigation)
     val allSkills = gatheringSkills ++ manufacturingSkills
     val currentIndex = allSkills.indexOf(selectedSkill.get)
@@ -221,5 +220,5 @@ class Scelverna {
       case i => i
     }
     selectedSkill = Some(allSkills(newIndex))
-  }
-}
+  end navigateMenu
+end Scelverna
