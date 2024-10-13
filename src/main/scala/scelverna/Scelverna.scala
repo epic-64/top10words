@@ -53,13 +53,16 @@ case class StoneCutting() extends Skill {
   var level: Int   = 1
 }
 
+class GameState:
+  var activeSkill: Option[Skill]    = None
+  var inventory  : Map[String, Int] = Map("Wood" -> 0)
+
 class Scelverna:
+  private val state = new GameState()
+
   // Skills lists
   private val gatheringSkills: List[Skill] = List(Woodcutting(), Mining())
   private val manufacturingSkills: List[Skill] = List(Woodworking(), StoneCutting())
-
-  // Inventory for player
-  private var inventory: Map[String, Int] = Map("Wood" -> 0)
 
   // State to track the currently selected screen (skills or inventory)
   private var currentScreen: String = "skills" // Default to the skills screen
@@ -110,8 +113,8 @@ class Scelverna:
     Future {
       val frameDuration = (1000 / 60).millis
       while (true) {
-        update()
-        render(graphics)
+        update(state) // Pass game state to update
+        render(graphics, state) // Pass game state to render
         screen.refresh()
         Thread.sleep(frameDuration.toMillis)
       }
@@ -121,20 +124,21 @@ class Scelverna:
     Future {
       while (true) {
         val keyStroke: KeyStroke = screen.readInput()
-        handleInput(keyStroke)
+        handleInput(keyStroke, state) // Pass game state to handleInput
       }
     }
   end run
 
-  def update(): Unit =
-    activeSkill match {
+  def update(state: GameState): Unit =
+    // Update the active skill
+    state.activeSkill match {
       case Some(skill: Woodcutting) =>
         if (actionProgress >= 1.0) {
           skill.xp += 10 // Award XP after each 5-second action
           actionProgress = 0.0 // Reset action progress
 
           // Add wood to inventory when completing woodcutting action
-          inventory = inventory.updated("Wood", inventory("Wood") + 1)
+          state.inventory = state.inventory.updated("Wood", state.inventory("Wood") + 1)
 
           // Check if the skill levels up
           if (skill.xp >= skill.xpForNextLevel) {
@@ -147,7 +151,7 @@ class Scelverna:
       case _                        => // Do nothing for unimplemented skills
     }
 
-    // Slow down spinner update (every 10 frames)
+    // Update spinner
     if (spinnerUpdateCounter >= 10) {
       spinnerIndex = (spinnerIndex + 1) % spinnerChars.size
       spinnerUpdateCounter = 0
@@ -156,24 +160,17 @@ class Scelverna:
     }
   end update
 
-  def render(graphics: TextGraphics): Unit =
+  def render(graphics: TextGraphics, state: GameState): Unit =
     screen.clear()
 
     // Always render the left-side menu
     renderMenu(graphics)
 
-    // Render the appropriate screen based on the selected menu item
+    // Decide which screen to display based on the current menu selection
     if (menuItems(selectedMenuIndex) == "Inventory") {
-      renderInventory(graphics) // Show the inventory when selected
+      renderInventory(graphics, state) // Pass game state into inventory renderer
     } else {
-      // Render the selected skill UI
-      activeSkill match {
-        case Some(skill: Woodcutting)  => renderSkillUI(graphics, skill)
-        case Some(skill: Mining)       => renderSkillUI(graphics, skill)
-        case Some(skill: Woodworking)  => renderNotImplemented(graphics, skill)
-        case Some(skill: StoneCutting) => renderNotImplemented(graphics, skill)
-        case _                         => // Do nothing if no skill is selected
-      }
+      renderSkillUI(graphics, state) // Pass game state into skill renderer
     }
 
     screen.refresh()
@@ -208,42 +205,56 @@ class Scelverna:
       )
     }
 
-    // Render "Management" header with underline
+    // Render "Management" header with underline (Management should never be highlighted)
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT)
     graphics.putString(2, 7 + gatheringSkills.size + manufacturingSkills.size, "Management")
     graphics.putString(2, 8 + gatheringSkills.size + manufacturingSkills.size, "----------")
 
-    // Render the inventory item and highlight if it's selected
+    // Render the inventory item and highlight if it's active
     val inventoryIndex = gatheringSkills.size + manufacturingSkills.size
-    graphics.setForegroundColor(TextColor.ANSI.DEFAULT)
+    val inventoryColor = if (activeSkill.isEmpty && menuItems(selectedMenuIndex) == "Inventory") TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
+    graphics.setForegroundColor(inventoryColor)
     graphics.putString(2, 9 + gatheringSkills.size + manufacturingSkills.size,
       s" ${if (selectedMenuIndex == inventoryIndex) ">" else " "} Inventory")
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
   end renderMenu
 
+  def renderSkillSpinner(graphics: TextGraphics, skill: Skill): Unit =
+    val spinnerChar = spinnerChars(spinnerIndex) // Get the current spinner character
+    graphics.putString(30, 9, s"Spinner: $spinnerChar ${skill.name} in progress...")
+  end renderSkillSpinner
 
-  def renderInventory(graphics: TextGraphics): Unit =
+  def renderInventory(graphics: TextGraphics, state: GameState): Unit =
     graphics.putString(30, 1, "Inventory")
     graphics.putString(30, 2, "---------")
 
     // Display inventory items
-    inventory.zipWithIndex.foreach { case ((item, count), index) =>
+    state.inventory.zipWithIndex.foreach { case ((item, count), index) =>
       graphics.putString(30, 3 + index, s"$item: $count")
+    }
+
+    // Continue rendering the active skill spinner if a skill is active
+    state.activeSkill.foreach { skill =>
+      graphics.putString(30, 10, "Active skill is still running...")
+      renderSkillSpinner(graphics, skill)
     }
   end renderInventory
 
-  def renderSkillUI(graphics: TextGraphics, skill: Skill): Unit =
-    graphics.putString(30, 1, s"${skill.name} Level: ${skill.level}")
-    graphics.putString(30, 2, s"XP: ${skill.xp} / ${skill.xpForNextLevel}")
+  def renderSkillUI(graphics: TextGraphics, state: GameState): Unit =
+    state.activeSkill match {
+      case Some(skill: Woodcutting) =>
+        graphics.putString(30, 1, s"${skill.name} Level: ${skill.level}")
+        graphics.putString(30, 2, s"XP: ${skill.xp} / ${skill.xpForNextLevel}")
 
-    // Render skill XP progress bar (Blue)
-    graphics.putString(30, 4, "XP Progress:")
-    renderProgressBar(graphics, 30, 5, skill.progressToNextLevel, TextColor.ANSI.BLUE_BRIGHT)
+        // Render skill XP progress bar (Blue)
+        graphics.putString(30, 4, "XP Progress:")
+        renderProgressBar(graphics, 30, 5, skill.progressToNextLevel, TextColor.ANSI.BLUE_BRIGHT)
 
-    // Render action progress bar (Green) if applicable
-    if (skill.isInstanceOf[Woodcutting]) {
-      graphics.putString(30, 7, "Action Progress:")
-      renderProgressBar(graphics, 30, 8, actionProgress, TextColor.ANSI.GREEN)
+        // Render action progress bar (Green) if applicable
+        graphics.putString(30, 7, "Action Progress:")
+        renderProgressBar(graphics, 30, 8, actionProgress, TextColor.ANSI.GREEN)
+      case _                        => graphics.putString(30, 1, "No active skill")
     }
   end renderSkillUI
 
@@ -276,22 +287,22 @@ class Scelverna:
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset to default color
   end renderProgressBar
 
-  def handleInput(keyStroke: KeyStroke): Unit =
+  def handleInput(keyStroke: KeyStroke, state: GameState): Unit =
     keyStroke.getKeyType match {
       case KeyType.ArrowDown =>
         navigateMenu(1)
       case KeyType.ArrowUp   =>
         navigateMenu(-1)
       case KeyType.Enter     =>
-        // If "Inventory" is selected, render the inventory; otherwise, activate the selected skill
+        // If "Inventory" is selected, just render the inventory without affecting the active skill
         if (menuItems(selectedMenuIndex) == "Inventory") {
-          activeSkill = None // No active skill in inventory
+          // Inventory rendering logic, no changes to activeSkill
         } else {
           // Activate the selected skill based on selectedMenuIndex
           if (selectedMenuIndex < gatheringSkills.size) {
-            activeSkill = Some(gatheringSkills(selectedMenuIndex)) // Gathering skill
+            state.activeSkill = Some(gatheringSkills(selectedMenuIndex)) // Gathering skill
           } else if (selectedMenuIndex < gatheringSkills.size + manufacturingSkills.size) {
-            activeSkill = Some(manufacturingSkills(selectedMenuIndex - gatheringSkills.size)) // Manufacturing skill
+            state.activeSkill = Some(manufacturingSkills(selectedMenuIndex - gatheringSkills.size)) // Manufacturing skill
           }
         }
       case _                 => // Other keys can be handled here if necessary
