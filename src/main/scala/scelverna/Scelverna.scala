@@ -89,20 +89,33 @@ class Scelverna {
 
     // Display Woodcutting XP and level
     graphics.putString(2, 1, s"${woodcutting.name} Level: ${woodcutting.level}")
-    graphics.putString(2, 2, s"XP: ${woodcutting.xp} / ${woodcutting.xpForNextLevel}")
 
     // Render skill XP progress bar (Blue)
-    val xpProgressBarLength = 40
-    val xpFilledLength = (woodcutting.progressToNextLevel * xpProgressBarLength).toInt
-    graphics.setBackgroundColor(TextColor.ANSI.BLUE)
-    graphics.putString(2, 3, s"XP Progress: [" + "=" * xpFilledLength + " " * (xpProgressBarLength - xpFilledLength) + "]")
-    graphics.setBackgroundColor(TextColor.ANSI.DEFAULT) // Reset background color
+    graphics.putString(2, 3, "XP Progress:")
+    renderProgressBar(graphics, 2, 4, woodcutting.progressToNextLevel, TextColor.ANSI.BLUE)
 
     // Render action progress bar (Green)
-    val actionProgressBarLength = 40
-    val actionFilledLength = (actionProgress * actionProgressBarLength).toInt
-    graphics.setBackgroundColor(TextColor.ANSI.GREEN)
-    graphics.putString(2, 5, s"Action Progress: [" + "=" * actionFilledLength + " " * (actionProgressBarLength - actionFilledLength) + "]")
-    graphics.setBackgroundColor(TextColor.ANSI.DEFAULT) // Reset background color
+    graphics.putString(2, 6, "Action Progress:")
+    renderProgressBar(graphics, 2, 7, actionProgress, TextColor.ANSI.GREEN)
+  }
+
+  def renderProgressBar(graphics: TextGraphics, x: Int, y: Int, progress: Double, color: TextColor): Unit = {
+    val progressBarLength = 40
+    val filledLength = (progress * progressBarLength).toInt
+
+    graphics.setForegroundColor(color)
+
+    // Render the progress bar using colored [ ] pairs
+    for (i <- 0 until progressBarLength) {
+      if (i < filledLength) {
+        graphics.putString(x + i, y, "[")
+        graphics.putString(x + i + 1, y, "]")
+      } else {
+        graphics.putString(x + i, y, " ")
+        graphics.putString(x + i + 1, y, " ")
+      }
+    }
+
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset to default color
   }
 }
