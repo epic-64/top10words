@@ -19,9 +19,24 @@ object Game {
   }
 }
 
+trait Skill {
+  val name: String
+  var xp: Int
+  var level: Int
+  def xpForNextLevel: Int = level * 100 // Example XP progression per level
+  def progressToNextLevel: Double = xp.toDouble / xpForNextLevel
+}
+
+case class Woodcutting() extends Skill {
+  val name: String = "Woodcutting"
+  var xp: Int = 0
+  var level: Int = 1
+}
+
 class Scelverna {
-  private var woodcuttingXP: Int = 0
-  private var progress: Double = 0.0 // Progress bar value (0.0 to 1.0)
+  private var skills: List[Skill] = List(Woodcutting()) // Add more skills to the list as needed
+  private var actionProgress: Double = 0.0 // Progress bar for the action (0.0 to 1.0)
+  private val actionDurationSeconds = 5.0
 
   def run(): Unit = {
     val terminalFactory = new DefaultTerminalFactory()
@@ -49,32 +64,45 @@ class Scelverna {
         Thread.sleep(frameDuration.toMillis)
       }
     }
-
-    // Start the progress bar for woodcutting actions (takes 5 seconds)
-    Future {
-      while (true) {
-        if (progress >= 1.0) {
-          woodcuttingXP += 10  // Award XP after each 5-second action
-          progress = 0.0       // Reset progress
-        } else {
-          progress += 1.0 / (5 * 60) // Progress increases over 5 seconds
-        }
-        Thread.sleep(1000 / 60) // Update 60 times per second
-      }
-    }
   }
 
   def update(): Unit = {
-    // Any game logic update can go here
+    val woodcutting = skills.head.asInstanceOf[Woodcutting] // In this case, Woodcutting is the first skill
+
+    // Update action progress
+    if (actionProgress >= 1.0) {
+      woodcutting.xp += 10 // Award XP after each 5-second action
+      actionProgress = 0.0 // Reset action progress
+
+      // Check if the skill levels up
+      if (woodcutting.xp >= woodcutting.xpForNextLevel) {
+        woodcutting.level += 1
+        woodcutting.xp = 0 // Reset XP for the next level
+      }
+    } else {
+      actionProgress += 1.0 / (actionDurationSeconds * 60) // Progress increases over 5 seconds
+    }
   }
 
   def render(graphics: TextGraphics): Unit = {
-    graphics.putString(2, 1, s"Woodcutting XP: $woodcuttingXP")
+    val woodcutting = skills.head.asInstanceOf[Woodcutting] // Woodcutting is the first skill
 
-    // Render progress bar for current action
-    val progressBarLength = 40
-    val filledLength = (progress * progressBarLength).toInt
-    val progressBar = "=" * filledLength + " " * (progressBarLength - filledLength)
-    graphics.putString(2, 3, s"Progress: [$progressBar]")
+    // Display Woodcutting XP and level
+    graphics.putString(2, 1, s"${woodcutting.name} Level: ${woodcutting.level}")
+    graphics.putString(2, 2, s"XP: ${woodcutting.xp} / ${woodcutting.xpForNextLevel}")
+
+    // Render skill XP progress bar (Blue)
+    val xpProgressBarLength = 40
+    val xpFilledLength = (woodcutting.progressToNextLevel * xpProgressBarLength).toInt
+    graphics.setBackgroundColor(TextColor.ANSI.BLUE)
+    graphics.putString(2, 3, s"XP Progress: [" + "=" * xpFilledLength + " " * (xpProgressBarLength - xpFilledLength) + "]")
+    graphics.setBackgroundColor(TextColor.ANSI.DEFAULT) // Reset background color
+
+    // Render action progress bar (Green)
+    val actionProgressBarLength = 40
+    val actionFilledLength = (actionProgress * actionProgressBarLength).toInt
+    graphics.setBackgroundColor(TextColor.ANSI.GREEN)
+    graphics.putString(2, 5, s"Action Progress: [" + "=" * actionFilledLength + " " * (actionProgressBarLength - actionFilledLength) + "]")
+    graphics.setBackgroundColor(TextColor.ANSI.DEFAULT) // Reset background color
   }
 }
