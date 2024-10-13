@@ -10,8 +10,24 @@ object take:
 object listen:
   infix def to(other: String) = println(s"Listening to $other")
 
-object Offer:
-  infix def Prayer = println("Offering prayer")
+object offer:
+  infix def prayer = println("Offering prayer")
+
+object chainable;
+
+object a:
+  infix def friend = println("a friend")
+  infix def walk = println("a walk")
+
+object talk:
+  infix def to(other: a.type) =
+    print("Talking to ")
+    other
+
+object go:
+  infix def fer(other: a.type) =
+    print("Going for ")
+    other
 
 extension (mood: String)
   infix def is(other: String): Boolean = mood == other
@@ -19,8 +35,6 @@ extension (mood: String)
 if mood is sad then
   take exercise;
   listen to Quran;
-  Offer Prayer;
-
-
-
-
+  offer prayer;
+  talk to a friend;
+  go fer a walk;
