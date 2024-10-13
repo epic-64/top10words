@@ -166,7 +166,7 @@ class Scelverna:
 
     // Render skill XP progress bar (Blue)
     graphics.putString(30, 4, "XP Progress:")
-    renderProgressBar(graphics, 30, 5, skill.progressToNextLevel, TextColor.ANSI.BLUE)
+    renderProgressBar(graphics, 30, 5, skill.progressToNextLevel, TextColor.ANSI.BLUE_BRIGHT)
 
     // Render action progress bar (Green) if applicable
     if (skill.isInstanceOf[Woodcutting]) {
@@ -180,20 +180,28 @@ class Scelverna:
 
   def renderProgressBar(graphics: TextGraphics, x: Int, y: Int, progress: Double, color: TextColor): Unit =
     val progressBarLength = 40
-    val filledLength = (progress * progressBarLength).toInt
+    val filledLength = (progress * (progressBarLength - 2)).toInt // Reserve space for boundaries
 
+    // Render the left boundary in gray
+    graphics.setForegroundColor(TextColor.ANSI.WHITE)
+    graphics.putString(x, y, "[")
+
+    // Render the progress bar fill material
     graphics.setForegroundColor(color)
-
-    // Render the progress bar using colored [ ] pairs
-    for (i <- 0 until progressBarLength) {
-      if (i < filledLength) {
-        graphics.putString(x + i, y, "[")
-        graphics.putString(x + i + 1, y, "]")
-      } else {
-        graphics.putString(x + i, y, " ")
-        graphics.putString(x + i + 1, y, " ")
-      }
+    val fillChar = '■' // Use a solid block character for optimal fill
+    for (i <- 1 until 1 + filledLength) {
+      graphics.putString(x + i, y, fillChar.toString)
     }
+
+    // Render the remaining empty space in default color
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT)
+    for (i <- 1 + filledLength until progressBarLength - 1) {
+      graphics.putString(x + i, y, " ")
+    }
+
+    // Render the right boundary in gray
+    graphics.setForegroundColor(TextColor.ANSI.WHITE)
+    graphics.putString(x + progressBarLength - 1, y, "]")
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset to default color
   end renderProgressBar
