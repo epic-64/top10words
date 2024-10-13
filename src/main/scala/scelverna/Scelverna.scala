@@ -159,23 +159,28 @@ class Scelverna:
   def render(graphics: TextGraphics): Unit =
     screen.clear()
 
-    currentScreen match {
-      case "skills"    =>
-        renderMenu(graphics)
-        activeSkill match {
-          case Some(skill: Woodcutting)  => renderSkillUI(graphics, skill)
-          case Some(skill: Mining)       => renderSkillUI(graphics, skill)
-          case Some(skill: Woodworking)  => renderNotImplemented(graphics, skill)
-          case Some(skill: StoneCutting) => renderNotImplemented(graphics, skill)
-          case _                         => // Do nothing
-        }
-      case "inventory" => renderInventory(graphics)
+    // Always render the left-side menu, regardless of the screen
+    renderMenu(graphics)
+
+    // If the current screen is "inventory," render the inventory on the right
+    if (currentScreen == "inventory") {
+      renderInventory(graphics)
+    } else {
+      // Otherwise, render the selected skill
+      activeSkill match {
+        case Some(skill: Woodcutting)  => renderSkillUI(graphics, skill)
+        case Some(skill: Mining)       => renderSkillUI(graphics, skill)
+        case Some(skill: Woodworking)  => renderNotImplemented(graphics, skill)
+        case Some(skill: StoneCutting) => renderNotImplemented(graphics, skill)
+        case _                         => // Do nothing
+      }
     }
 
     screen.refresh()
   end render
 
   def renderMenu(graphics: TextGraphics): Unit =
+    // Render "Gathering" header with underline
     graphics.putString(2, 1, "Gathering")
     graphics.putString(2, 2, "----------") // Underline for "Gathering"
 
@@ -188,6 +193,7 @@ class Scelverna:
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
 
+    // Render "Manufacturing" header with underline
     graphics.putString(2, 4 + gatheringSkills.size, "Manufacturing")
     graphics.putString(2, 5 + gatheringSkills.size, "-------------") // Underline for "Manufacturing"
 
@@ -202,11 +208,15 @@ class Scelverna:
       )
     }
 
-    // Render the inventory item in the menu
+    // Render "Management" header with underline
+    graphics.putString(2, 7 + gatheringSkills.size + manufacturingSkills.size, "Management")
+    graphics.putString(2, 8 + gatheringSkills.size + manufacturingSkills.size, "----------")
+
+    // Render the inventory item with a cursor when selected
     val inventoryIndex = gatheringSkills.size + manufacturingSkills.size
-    val inventoryColor = if (selectedMenuIndex == inventoryIndex) TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
-    graphics.setForegroundColor(inventoryColor)
-    graphics.putString(2, 7 + gatheringSkills.size + manufacturingSkills.size, " Inventory")
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Inventory doesn't turn green, but gets a cursor
+    graphics.putString(2, 9 + gatheringSkills.size + manufacturingSkills.size,
+      s" ${if (selectedMenuIndex == inventoryIndex) ">" else " "} Inventory")
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
   end renderMenu
@@ -275,7 +285,12 @@ class Scelverna:
         if (menuItems(selectedMenuIndex) == "Inventory") {
           currentScreen = "inventory" // Open inventory screen
         } else {
-          activeSkill = Some(gatheringSkills(selectedMenuIndex)) // Activate the selected skill
+          // Activate the selected skill based on selectedMenuIndex
+          if (selectedMenuIndex < gatheringSkills.size) {
+            activeSkill = Some(gatheringSkills(selectedMenuIndex)) // Gathering skill
+          } else if (selectedMenuIndex < gatheringSkills.size + manufacturingSkills.size) {
+            activeSkill = Some(manufacturingSkills(selectedMenuIndex - gatheringSkills.size)) // Manufacturing skill
+          }
         }
       case _                 => // Other keys can be handled here if necessary
     }
