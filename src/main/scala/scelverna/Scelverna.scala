@@ -58,15 +58,16 @@ class Scelverna {
   private var gatheringSkills: List[Skill] = List(Woodcutting(), Mining())
   private var manufacturingSkills: List[Skill] = List(Woodworking(), Stonecutting())
 
-  // State to track the currently selected skill
+  // State to track the currently selected skill and the active skill
   private var selectedSkill: Option[Skill] = Some(gatheringSkills.head)
+  private var activeSkill: Option[Skill] = None
 
   private var actionProgress: Double = 0.0 // Progress bar for the action (0.0 to 1.0)
   private val actionDurationSeconds = 5.0
 
   val terminalFactory = new DefaultTerminalFactory()
   val fontConfig      = SwingTerminalFontConfiguration.newInstance(new Font("Monospaced", Font.PLAIN, 24))
-  terminalFactory.setInitialTerminalSize(new TerminalSize(80, 24))
+  terminalFactory.setInitialTerminalSize(new TerminalSize(100, 24)) // Adjust width to make left section wider
   terminalFactory.setTerminalEmulatorFontConfiguration(fontConfig)
 
   val terminal: Terminal = terminalFactory.createTerminal()
@@ -91,7 +92,7 @@ class Scelverna {
       }
     }
 
-    // Handle input for skill selection
+    // Handle input for skill selection and activation
     Future {
       while (true) {
         val keyStroke: KeyStroke = screen.readInput()
@@ -101,9 +102,8 @@ class Scelverna {
   }
 
   def update(): Unit = {
-    selectedSkill match {
+    activeSkill match {
       case Some(skill: Woodcutting) =>
-        // Update action progress only for Woodcutting
         if (actionProgress >= 1.0) {
           skill.xp += 10 // Award XP after each 5-second action
           actionProgress = 0.0 // Reset action progress
@@ -127,7 +127,7 @@ class Scelverna {
     renderMenu(graphics)
 
     // Render selected skill in the main pane
-    selectedSkill match {
+    activeSkill match {
       case Some(skill: Woodcutting) =>
         renderSkillUI(graphics, skill)
       case Some(skill: Mining) =>
@@ -143,32 +143,40 @@ class Scelverna {
   def renderMenu(graphics: TextGraphics): Unit = {
     graphics.putString(2, 1, "Gathering Skills:")
     gatheringSkills.zipWithIndex.foreach { case (skill, index) =>
+      val color = if (activeSkill.contains(skill)) TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
+      graphics.setForegroundColor(color)
       graphics.putString(2, 3 + index, s" ${if (selectedSkill.contains(skill)) ">" else " "} ${skill.name}")
     }
 
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
+
     graphics.putString(2, 6 + gatheringSkills.size, "Manufacturing Skills:")
     manufacturingSkills.zipWithIndex.foreach { case (skill, index) =>
+      val color = if (activeSkill.contains(skill)) TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
+      graphics.setForegroundColor(color)
       graphics.putString(2, 8 + gatheringSkills.size + index, s" ${if (selectedSkill.contains(skill)) ">" else " "} ${skill.name}")
     }
+
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
   }
 
   def renderSkillUI(graphics: TextGraphics, skill: Skill): Unit = {
-    graphics.putString(20, 1, s"${skill.name} Level: ${skill.level}")
-    graphics.putString(20, 2, s"XP: ${skill.xp} / ${skill.xpForNextLevel}")
+    graphics.putString(30, 1, s"${skill.name} Level: ${skill.level}")
+    graphics.putString(30, 2, s"XP: ${skill.xp} / ${skill.xpForNextLevel}")
 
     // Render skill XP progress bar (Blue)
-    graphics.putString(20, 4, "XP Progress:")
-    renderProgressBar(graphics, 20, 5, skill.progressToNextLevel, TextColor.ANSI.BLUE)
+    graphics.putString(30, 4, "XP Progress:")
+    renderProgressBar(graphics, 30, 5, skill.progressToNextLevel, TextColor.ANSI.BLUE)
 
     // Render action progress bar (Green) if applicable
     if (skill.isInstanceOf[Woodcutting]) {
-      graphics.putString(20, 7, "Action Progress:")
-      renderProgressBar(graphics, 20, 8, actionProgress, TextColor.ANSI.GREEN)
+      graphics.putString(30, 7, "Action Progress:")
+      renderProgressBar(graphics, 30, 8, actionProgress, TextColor.ANSI.GREEN)
     }
   }
 
   def renderNotImplemented(graphics: TextGraphics, skill: Skill): Unit = {
-    graphics.putString(20, 1, s"${skill.name}: Not Implemented")
+    graphics.putString(30, 1, s"${skill.name}: Not Implemented")
   }
 
   def renderProgressBar(graphics: TextGraphics, x: Int, y: Int, progress: Double, color: TextColor): Unit = {
@@ -197,6 +205,8 @@ class Scelverna {
         navigateMenu(1)
       case KeyType.ArrowUp =>
         navigateMenu(-1)
+      case KeyType.Enter | KeyType.Character if keyStroke.getCharacter == ' ' =>
+        activeSkill = selectedSkill // Activate the currently selected skill
       case _ => // Other keys can be handled here if necessary
     }
   }
