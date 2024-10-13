@@ -159,20 +159,20 @@ class Scelverna:
   def render(graphics: TextGraphics): Unit =
     screen.clear()
 
-    // Always render the left-side menu, regardless of the screen
+    // Always render the left-side menu
     renderMenu(graphics)
 
-    // If the current screen is "inventory," render the inventory on the right
-    if (currentScreen == "inventory") {
-      renderInventory(graphics)
+    // Render the appropriate screen based on the selected menu item
+    if (menuItems(selectedMenuIndex) == "Inventory") {
+      renderInventory(graphics) // Show the inventory when selected
     } else {
-      // Otherwise, render the selected skill
+      // Render the selected skill UI
       activeSkill match {
         case Some(skill: Woodcutting)  => renderSkillUI(graphics, skill)
         case Some(skill: Mining)       => renderSkillUI(graphics, skill)
         case Some(skill: Woodworking)  => renderNotImplemented(graphics, skill)
         case Some(skill: StoneCutting) => renderNotImplemented(graphics, skill)
-        case _                         => // Do nothing
+        case _                         => // Do nothing if no skill is selected
       }
     }
 
@@ -212,14 +212,15 @@ class Scelverna:
     graphics.putString(2, 7 + gatheringSkills.size + manufacturingSkills.size, "Management")
     graphics.putString(2, 8 + gatheringSkills.size + manufacturingSkills.size, "----------")
 
-    // Render the inventory item with a cursor when selected
+    // Render the inventory item and highlight if it's selected
     val inventoryIndex = gatheringSkills.size + manufacturingSkills.size
-    graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Inventory doesn't turn green, but gets a cursor
+    graphics.setForegroundColor(TextColor.ANSI.DEFAULT)
     graphics.putString(2, 9 + gatheringSkills.size + manufacturingSkills.size,
       s" ${if (selectedMenuIndex == inventoryIndex) ">" else " "} Inventory")
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
   end renderMenu
+
 
   def renderInventory(graphics: TextGraphics): Unit =
     graphics.putString(30, 1, "Inventory")
@@ -282,8 +283,9 @@ class Scelverna:
       case KeyType.ArrowUp   =>
         navigateMenu(-1)
       case KeyType.Enter     =>
+        // If "Inventory" is selected, render the inventory; otherwise, activate the selected skill
         if (menuItems(selectedMenuIndex) == "Inventory") {
-          currentScreen = "inventory" // Open inventory screen
+          activeSkill = None // No active skill in inventory
         } else {
           // Activate the selected skill based on selectedMenuIndex
           if (selectedMenuIndex < gatheringSkills.size) {
@@ -299,9 +301,10 @@ class Scelverna:
   def navigateMenu(direction: Int): Unit =
     // Cycle through the menu items, including skills and inventory
     selectedMenuIndex = (selectedMenuIndex + direction) match {
-      case i if i < 0                => menuItems.size - 1
+      case i if i < 0               => menuItems.size - 1
       case i if i >= menuItems.size => 0
-      case i                         => i
+      case i                        => i
     }
   end navigateMenu
+
 end Scelverna
