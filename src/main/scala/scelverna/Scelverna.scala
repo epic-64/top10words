@@ -204,8 +204,10 @@ class Scelverna:
         navigateMenu(1)
       case KeyType.ArrowUp =>
         navigateMenu(-1)
-      case KeyType.Enter | KeyType.Character if keyStroke.getCharacter == ' ' =>
-        activeSkill = selectedSkill // Activate the currently selected skill
+      case KeyType.Enter =>
+        activeSkill = selectedSkill // Activate the currently selected skill with ENTER
+      case KeyType.Character if keyStroke.getCharacter == ' ' =>
+        activeSkill = selectedSkill // Activate the currently selected skill with SPACE
       case _ => // Other keys can be handled here if necessary
     }
   end handleInput
