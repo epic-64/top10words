@@ -149,7 +149,10 @@ class Scelverna:
   end render
 
   def renderMenu(graphics: TextGraphics): Unit =
+    // Render "Gathering" header with underline
     graphics.putString(2, 1, "Gathering")
+    graphics.putString(2, 2, "----------") // Underline for "Gathering"
+
     gatheringSkills.zipWithIndex.foreach { case (skill, index) =>
       val color = if (activeSkill.contains(skill)) TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
       graphics.setForegroundColor(color)
@@ -158,13 +161,16 @@ class Scelverna:
 
     graphics.setForegroundColor(TextColor.ANSI.DEFAULT) // Reset color to default
 
-    graphics.putString(2, 6 + gatheringSkills.size, "Manufacturing")
+    // Render "Manufacturing" header with underline, reduced gap
+    graphics.putString(2, 4 + gatheringSkills.size, "Manufacturing")
+    graphics.putString(2, 5 + gatheringSkills.size, "-------------") // Underline for "Manufacturing"
+
     manufacturingSkills.zipWithIndex.foreach { case (skill, index) =>
       val color = if (activeSkill.contains(skill)) TextColor.ANSI.GREEN_BRIGHT else TextColor.ANSI.DEFAULT
       graphics.setForegroundColor(color)
       graphics.putString(
         2,
-        8 + gatheringSkills.size + index,
+        6 + gatheringSkills.size + index, // Reduced vertical gap by adjusting indices
         s" ${if (selectedSkill.contains(skill)) ">" else " "} ${skill.name}"
       )
     }
